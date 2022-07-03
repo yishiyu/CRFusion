@@ -1,2 +1,6 @@
-data/
+__pycache__/
+.vscode/
 notes/
+data/
+checkpoints/
+log/
