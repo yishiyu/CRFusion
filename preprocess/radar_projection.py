@@ -3,7 +3,7 @@ import cv2
 from nuscenes.utils.data_classes import PointCloud
 from pyquaternion import Quaternion
 from nuscenes.utils.geometry_utils import view_points
-import radar
+from . import radar
 
 # radar data(enriched)
 # [0]: x front距离

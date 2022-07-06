@@ -10,6 +10,7 @@ def get_config(config_file):
         def __init__(self):
             # 路径参数
             self.data_dir = config['PATH']['data_dir']
+            self.preprocessed_data_dir = config['PATH']['preprocessed_data_dir']
             self.checkpoints_dir = config['PATH']['checkpoints_dir']
 
             # 数据集参数
