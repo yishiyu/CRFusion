@@ -59,6 +59,8 @@ class Preprocesser:
             if not os.path.exists(save_path):
                 os.mkdir(save_path)
 
+            print("==========preprocess dataset {}==========".format(version))
+
             sample_index = 0
 
             for sample in tqdm.tqdm(nusc.sample):
@@ -121,6 +123,7 @@ class Preprocesser:
                 with open(os.path.join(sample_path, 'labels_targets.npy'), 'wb') as file:
                     np.save(file, labels_targets)
 
+                sample_index += 1
                 pass
             pass
         pass
