@@ -87,6 +87,13 @@ class Preprocesser:
                 # 只取需要的通道(R,G,B,rcs,distance)
                 image_full = np.array(image_full[:, :, self.CHANNELS])
 
+                # 恢复原始图片
+                # import cv2
+                # # image.shape = (360, 640, 3)
+                # image=(image_full[:,:,:3]*255).astype(np.uint8)
+                # cv2.imshow("debug",image)
+                # cv2.waitKey(0)
+
                 # 4. 加载标注数据
                 annotations = self._load_annotations(nusc, sample, name2labels)
                 # 如果当前sample中没有符合要求的目标,则放弃此sample

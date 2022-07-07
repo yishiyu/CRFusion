@@ -36,8 +36,8 @@ def get_config(config_file):
             self.cls_num = 7+1
 
             # 融合参数
-            self.image_size = (config.getint('DATAFUSION', 'image_width'),
-                               config.getint('DATAFUSION', 'image_height'))
+            self.image_size = (config.getint('DATAFUSION', 'image_height'),
+                               config.getint('DATAFUSION', 'image_width'))
             self.radar_projection_height = \
                 config.getfloat('DATAFUSION', 'radar_projection_height')
             self.channels = \
@@ -45,5 +45,21 @@ def get_config(config_file):
             self.only_radar_annotated = \
                 config.getint('PREPROCESSING', 'only_radar_annotated')
 
+            # 训练超参数
+            self.focal_loss_alpha = config.getfloat('HYPERPARAMETERS', 'focal_loss_alpha')
+            self.focal_loss_gamma = config.getfloat('HYPERPARAMETERS', 'focal_loss_gamma')
+            self.learning_rate = config.getfloat('HYPERPARAMETERS', 'learning_rate')
+            self.num_workders = config.getint('HYPERPARAMETERS','num_workders')
+            self.batchsize = config.getint('HYPERPARAMETERS', 'batchsize')
+            self.epochs = config.getint('HYPERPARAMETERS', 'epochs')
+            self.start_epoch = config.getint('HYPERPARAMETERS','start_epoch')
+            self.image_dropout = config.getfloat('HYPERPARAMETERS', 'image_dropout')
+
+            # 模型Filter
+            self.nms = config.getboolean('MODELFILTER', 'nms')
+            self.nms_threshold = config.getfloat('MODELFILTER', 'nms_threshold')
+            self.score_threshold = config.getfloat('MODELFILTER', 'score_threshold')
+            self.max_detections = config.getint('MODELFILTER','max_detections')
+            
     cfg = Configuration()
     return cfg

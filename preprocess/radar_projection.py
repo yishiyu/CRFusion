@@ -34,7 +34,7 @@ def _resize_image(image_data: np.array, target_shape: tuple):
 
     Args:
         image_data (np.array): 图片数据(height x width x 3)
-        target_shape (tuple): 目标大小(width, height)
+        target_shape (tuple): 目标大小(height, width)
 
     Returns:
         resized_image: resize后的图像(height x width x 3)
