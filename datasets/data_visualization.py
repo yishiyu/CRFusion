@@ -42,7 +42,17 @@ def visualization_preprocessed(data_path: str, anchors_path: str):
     regression_targets = regression_targets[:, :-1]
 
     # 根据anchors恢复
+    mean = np.array([0, 0, 0, 0])
+    std = np.array([0.2, 0.2, 0.2, 0.2])
     anchors = anchors[object_index]
+    anchor_widths = anchors[:, 2] - anchors[:, 0]
+    anchor_heights = anchors[:, 3] - anchors[:, 1]
+    regression_targets = (regression_targets*std + mean)
+    regression_targets[:, 0] = regression_targets[:, 0]*anchor_widths
+    regression_targets[:, 1] = regression_targets[:, 1]*anchor_heights
+    regression_targets[:, 2] = regression_targets[:, 2]*anchor_widths
+    regression_targets[:, 3] = regression_targets[:, 3]*anchor_heights
+
     regression_targets = (regression_targets + anchors).astype(int)
 
     # 恢复标签
@@ -81,7 +91,7 @@ if __name__ == '__main__':
     config = get_config()
 
     data_root = os.path.join(config.preprocessed_data_dir, config.nusc_version)
-    data_path = os.path.join(data_root, '00000')
+    data_path = os.path.join(data_root, '00046')
     anchor_path = os.path.join(
         config.preprocessed_data_dir, 'anchors_xyxy_absolute.npy')
 

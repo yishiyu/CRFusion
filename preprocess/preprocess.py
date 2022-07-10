@@ -41,7 +41,7 @@ class Preprocesser:
         self.anchors = create_anchors_xyxy_absolute().cpu().numpy()
 
         # 保存anchors
-        with open(os.path.join(self.OUT_DIR,'anchors_xyxy_absolute.npy'), 'wb') as file:
+        with open(os.path.join(self.OUT_DIR, 'anchors_xyxy_absolute.npy'), 'wb') as file:
             np.save(file, self.anchors)
 
     def preprocess(self):
@@ -106,7 +106,9 @@ class Preprocesser:
 
                 # 5. 计算标签
                 regression_targets, labels_targets = self._compute_targets(
-                    self.anchors, image_full, annotations, name2labels)
+                    self.anchors, image_full, annotations, name2labels,
+                    negative_overlap=0,
+                    positive_overlap=0)
 
                 # image_full ==> (5, 360, 640)
                 image_full = image_full.transpose(2, 0, 1)
@@ -134,52 +136,83 @@ class Preprocesser:
                 with open(os.path.join(sample_path, 'labels_targets.npy'), 'wb') as file:
                     np.save(file, labels_targets)
 
-                import cv2
-                color=[0, 159, 255]
-                # image_full = image_full.numpy()
-                regression_targets = regression_targets.numpy()
-                labels_targets = labels_targets.numpy()
+                # import cv2
+                # color = [0, 159, 255]
+                # # image_full = image_full.numpy()
+                # regression_targets = regression_targets.numpy()
+                # labels_targets = labels_targets.numpy()
 
-                image_full = (image_full[:3]*255).astype(np.uint8)
-                image = np.ascontiguousarray(image_full.transpose(1, 2, 0))
-                # image.shape = (360, 640, 3)
+                # image_full = (image_full[:3]*255).astype(np.uint8)
+                # image = np.ascontiguousarray(image_full.transpose(1, 2, 0))
+                # # image.shape = (360, 640, 3)
 
-                # 恢复目标框
-                # regression_targets.shape = (42975, 5) = (anchors_num, 4+1)
-                # regression_targets[:,-1] = anchor_state (-1=ignore, 0=ground, 1=object)
-                object_index = np.where(regression_targets[:, -1] == 1)
-                regression_targets = regression_targets[object_index]
-                regression_targets = regression_targets[:, :-1]
+                # # 恢复目标框
+                # # regression_targets.shape = (42975, 5) = (anchors_num, 4+1)
+                # # regression_targets[:,-1] = anchor_state (-1=ignore, 0=ground, 1=object)
+                # object_index = np.where(regression_targets[:, -1] == 1)
+                # regression_targets = regression_targets[object_index]
+                # regression_targets = regression_targets[:, :-1]
 
-                # 根据anchors恢复
-                anchors = self.anchors[object_index]
-                regression_targets = (regression_targets + anchors).astype(int)
+                # # 根据anchors恢复
+                # mean = np.array([0, 0, 0, 0])
+                # std = np.array([0.2, 0.2, 0.2, 0.2])
+                # anchors = self.anchors[object_index]
+                # anchor_widths = anchors[:, 2] - anchors[:, 0]
+                # anchor_heights = anchors[:, 3] - anchors[:, 1]
+                # regression_targets = (regression_targets*std + mean)
+                # regression_targets[:,
+                #                    0] = regression_targets[:, 0]*anchor_widths
+                # regression_targets[:,
+                #                    1] = regression_targets[:, 1]*anchor_heights
+                # regression_targets[:,
+                #                    2] = regression_targets[:, 2]*anchor_widths
+                # regression_targets[:,
+                #                    3] = regression_targets[:, 3]*anchor_heights
 
-                # 恢复标签
-                # labels_targets.shape = (42975, 9) = (anchors_num, cls_num+1)
-                # # labels_targets[:,-1] = anchor_state (-1=ignore, 0=ground, 1=object)
-                labels_targets = labels_targets[object_index]
-                labels_targets = labels_targets[:, :-1]
-                labels_targets = np.argmax(labels_targets, axis=1)
+                # regression_targets = (regression_targets + anchors).astype(int)
 
-                # 绘制参数
-                thickness = 2
+                # # 恢复标签
+                # # labels_targets.shape = (42975, 9) = (anchors_num, cls_num+1)
+                # # # labels_targets[:,-1] = anchor_state (-1=ignore, 0=ground, 1=object)
+                # labels_targets = labels_targets[object_index]
+                # labels_targets = labels_targets[:, :-1]
+                # labels_targets = np.argmax(labels_targets, axis=1)
+
+                # # 绘制参数
+                # thickness = 2
+                # # regression_targets = (annotations['bboxes']).astype(int)
+                # # labels_targets = np.ones(regression_targets.shape[0])
+                # for regression, label in zip(regression_targets, labels_targets):
+                #     # 绘制目标框
+                #     cv2.rectangle(image,
+                #                   (regression[0], regression[1]),
+                #                   (regression[2], regression[3]),
+                #                   color, thickness, cv2.LINE_AA)
+                #     # 绘制
+                #     cv2.putText(image, str(label),
+                #                 (regression[0], regression[1] - 10),
+                #                 cv2.FONT_HERSHEY_PLAIN,
+                #                 1, (255, 255, 255), 1)
+
+                # cv2.imshow("debug", image)
+                # cv2.waitKey(0)
+
                 # regression_targets = (annotations['bboxes']).astype(int)
-                # labels_targets = np.ones(regression_targets.shape[0])
-                for regression, label in zip(regression_targets, labels_targets):
-                    # 绘制目标框
-                    cv2.rectangle(image,
-                                (regression[0], regression[1]),
-                                (regression[2], regression[3]),
-                                color, thickness, cv2.LINE_AA)
-                    # 绘制
-                    cv2.putText(image, str(label),
-                                (regression[0], regression[1] - 10),
-                                cv2.FONT_HERSHEY_PLAIN,
-                                1, (255, 255, 255), 1)
+                # labels_targets = np.ones(regression_targets.shape[0], dtype=np.int32)
+                # for regression, label in zip(regression_targets, labels_targets):
+                #     # 绘制目标框
+                #     cv2.rectangle(image,
+                #                   (regression[0], regression[1]),
+                #                   (regression[2], regression[3]),
+                #                   color, thickness, cv2.LINE_AA)
+                #     # 绘制
+                #     cv2.putText(image, str(label),
+                #                 (regression[0], regression[1] - 10),
+                #                 cv2.FONT_HERSHEY_PLAIN,
+                #                 1, (255, 255, 255), 1)
 
-                cv2.imshow("debug", image)
-                cv2.waitKey(0)
+                # cv2.imshow("debug", image)
+                # cv2.waitKey(0)
 
                 sample_index += 1
                 pass
@@ -422,7 +455,9 @@ class Preprocesser:
 
         # overlaps = compute_overlap(anchors.astype(np.float64), annotations.astype(np.float64))
         overlaps = compute_overlap(anchors, annotations)
+        # 该anchor最接近哪个object(下标)
         argmax_overlaps_inds = np.argmax(overlaps, axis=1)
+        # 该anchor对应的重合度最高的目标框的iou
         max_overlaps = overlaps[np.arange(
             overlaps.shape[0]), argmax_overlaps_inds]
 
