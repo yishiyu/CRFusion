@@ -2,7 +2,7 @@ import configparser
 import ast
 
 
-def get_config(config_file):
+def get_config(config_file='config/default.cfg'):
     config = configparser.ConfigParser()
     config.read(config_file)
 

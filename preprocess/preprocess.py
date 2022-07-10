@@ -40,6 +40,10 @@ class Preprocesser:
         # 创建 anchors
         self.anchors = create_anchors_xyxy_absolute().cpu().numpy()
 
+        # 保存anchors
+        with open(os.path.join(self.OUT_DIR,'anchors_xyxy_absolute.npy'), 'wb') as file:
+            np.save(file, self.anchors)
+
     def preprocess(self):
         for version in self.versions:
             nusc = NuScenes(version=version,
@@ -129,6 +133,53 @@ class Preprocesser:
 
                 with open(os.path.join(sample_path, 'labels_targets.npy'), 'wb') as file:
                     np.save(file, labels_targets)
+
+                import cv2
+                color=[0, 159, 255]
+                # image_full = image_full.numpy()
+                regression_targets = regression_targets.numpy()
+                labels_targets = labels_targets.numpy()
+
+                image_full = (image_full[:3]*255).astype(np.uint8)
+                image = np.ascontiguousarray(image_full.transpose(1, 2, 0))
+                # image.shape = (360, 640, 3)
+
+                # 恢复目标框
+                # regression_targets.shape = (42975, 5) = (anchors_num, 4+1)
+                # regression_targets[:,-1] = anchor_state (-1=ignore, 0=ground, 1=object)
+                object_index = np.where(regression_targets[:, -1] == 1)
+                regression_targets = regression_targets[object_index]
+                regression_targets = regression_targets[:, :-1]
+
+                # 根据anchors恢复
+                anchors = self.anchors[object_index]
+                regression_targets = (regression_targets + anchors).astype(int)
+
+                # 恢复标签
+                # labels_targets.shape = (42975, 9) = (anchors_num, cls_num+1)
+                # # labels_targets[:,-1] = anchor_state (-1=ignore, 0=ground, 1=object)
+                labels_targets = labels_targets[object_index]
+                labels_targets = labels_targets[:, :-1]
+                labels_targets = np.argmax(labels_targets, axis=1)
+
+                # 绘制参数
+                thickness = 2
+                # regression_targets = (annotations['bboxes']).astype(int)
+                # labels_targets = np.ones(regression_targets.shape[0])
+                for regression, label in zip(regression_targets, labels_targets):
+                    # 绘制目标框
+                    cv2.rectangle(image,
+                                (regression[0], regression[1]),
+                                (regression[2], regression[3]),
+                                color, thickness, cv2.LINE_AA)
+                    # 绘制
+                    cv2.putText(image, str(label),
+                                (regression[0], regression[1] - 10),
+                                cv2.FONT_HERSHEY_PLAIN,
+                                1, (255, 255, 255), 1)
+
+                cv2.imshow("debug", image)
+                cv2.waitKey(0)
 
                 sample_index += 1
                 pass
