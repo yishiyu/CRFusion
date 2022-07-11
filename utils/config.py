@@ -42,8 +42,14 @@ def get_config(config_file='config/default.cfg'):
                 config.getfloat('DATAFUSION', 'radar_projection_height')
             self.channels = \
                 ast.literal_eval(config.get('DATAFUSION', 'channels'))
+            
+            # 预处理参数
             self.only_radar_annotated = \
                 config.getint('PREPROCESSING', 'only_radar_annotated')
+            self.positive_overlap = \
+                config.getfloat('PREPROCESSING', 'positive_overlap')
+            self.negative_overlap = \
+                config.getfloat('PREPROCESSING', 'negative_overlap')
 
             # 训练超参数
             self.focal_loss_alpha = config.getfloat('HYPERPARAMETERS', 'focal_loss_alpha')

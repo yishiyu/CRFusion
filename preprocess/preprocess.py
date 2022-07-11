@@ -109,8 +109,8 @@ class Preprocesser:
                 # 5. 计算标签
                 regression_targets, labels_targets = self._compute_targets(
                     self.anchors, image_full, annotations, name2labels,
-                    negative_overlap=0,
-                    positive_overlap=0)
+                    negative_overlap=self.config.positive_overlap,
+                    positive_overlap=self.config.positive_overlap)
 
                 # image_full ==> (5, 360, 640)
                 image_full = image_full.transpose(2, 0, 1)
