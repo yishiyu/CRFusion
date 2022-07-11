@@ -3,12 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import torchvision
-from loss import CRFLoss
+from .loss import CRFLoss
 from torchvision.ops import nms
 import os
 import sys
 
 sys.path.append(os.getcwd())
+
 from preprocess.anchors import anchor_parameters, create_anchors_xyxy_relative
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -574,7 +575,8 @@ if __name__ == '__main__':
     config = get_config(config_path)
 
     from datasets.nuscenes_dataset import NuscenesDataset
-    datasets = NuscenesDataset(config=config)
+    datasets = NuscenesDataset(version='v1.0-mini',
+                               config=config)
     train_loader = torch.utils.data.DataLoader(datasets, batch_size=2,
                                                collate_fn=datasets.collate_fn(
                                                    image_dropout=0),

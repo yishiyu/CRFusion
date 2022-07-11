@@ -2,7 +2,7 @@ from pathlib import Path
 import numpy as np
 import cv2
 import warnings
-
+import os
 
 def label_color(label):
     """ Return a color from a set of predefined colors. Contains 80 colors in total.
@@ -190,6 +190,8 @@ def visualize_targets(image_full, anchors,  regression_targets, labels_targets, 
 def visualize_result(image, bboxes, labels, display=False, save_path=None):
     """可视化预测框
     """
+    bboxes = bboxes.astype(int)
+    labels = labels.astype(int)
     # 绘制参数
     thickness = 2
     for regression, label in zip(bboxes, labels):
@@ -210,7 +212,8 @@ def visualize_result(image, bboxes, labels, display=False, save_path=None):
         cv2.waitKey(0)
 
     if save_path:
-        cv2.imwrite(save_path, image)
+        result = cv2.imwrite(save_path, image)
+        pass
 
 
 if __name__ == '__main__':
