@@ -93,13 +93,6 @@ class Preprocesser:
                 # 只取需要的通道(R,G,B,rcs,distance)
                 image_full = np.array(image_full[:, :, self.CHANNELS])
 
-                # 恢复原始图片
-                # import cv2
-                # # image.shape = (360, 640, 3)
-                # image=(image_full[:,:,:3]*255).astype(np.uint8)
-                # cv2.imshow("debug",image)
-                # cv2.waitKey(0)
-
                 # 4. 加载标注数据
                 annotations = self._load_annotations(nusc, sample, name2labels)
                 # 如果当前sample中没有符合要求的目标,则放弃此sample
@@ -129,8 +122,13 @@ class Preprocesser:
                 with open(os.path.join(sample_path, 'meta.json'), 'w') as file:
                     json.dump(meta, file)
 
-                with open(os.path.join(sample_path, 'image_full.npy'), 'wb') as file:
-                    np.save(file, image_full)
+                # 图像数据
+                with open(os.path.join(sample_path, 'image.npy'), 'wb') as file:
+                    np.save(file, image_full[:3].transpose(1,2,0).astype(np.uint8))
+
+                # 雷达数据
+                with open(os.path.join(sample_path, 'radar.npy'), 'wb') as file:
+                    np.save(file, image_full[3:])
 
                 with open(os.path.join(sample_path, 'regression_targets.npy'), 'wb') as file:
                     np.save(file, regression_targets)
@@ -141,7 +139,7 @@ class Preprocesser:
                 # 可视化
                 # visualize_targets(image_full, self.anchors, regression_targets.numpy(), labels_targets.numpy(), display=True)
                 # regression_gt = (annotations['bboxes']).astype(int)
-                # image = (image_full[:3]*255).astype(np.uint8)
+                # image = (image_full[:3]).astype(np.uint8)
                 # image = np.ascontiguousarray(image.transpose(1, 2, 0))
                 # visualize_result(image, regression_gt, np.ones(regression_gt.shape[0], dtype=int), display=True)
 
@@ -152,6 +150,7 @@ class Preprocesser:
 
     def _load_image(self, nusc,  sample):
         camera_token = sample['data'][self.CAMERA_CHANNEL]
+        # 后面的cv2.resize需要dtype=np.float32
         camera_sample = get_sensor_sample_data(
             nusc, sample, self.CAMERA_CHANNEL,
             dtype=np.float32, size=None

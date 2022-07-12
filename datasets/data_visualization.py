@@ -151,7 +151,7 @@ def visualize_targets(image_full, anchors,  regression_targets, labels_targets, 
 
     # 恢复原始图片
     # image_full.shape = (5, 360, 640)
-    image_full = (image_full[:3]*255).astype(np.uint8)
+    image_full = (image_full[:3]).astype(np.uint8)
     image = np.ascontiguousarray(image_full.transpose(1, 2, 0))
     # image.shape = (360, 640, 3)
 

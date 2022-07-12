@@ -3,9 +3,13 @@ import torch
 import numpy as np
 from torch.utils import data
 from pathlib import Path
+from torchvision import transforms
 
 
 class NuscenesDataset(data.Dataset):
+
+    std = [0.229, 0.224, 0.225]
+    mean=[0.485, 0.456, 0.406]
 
     def __init__(self,
                  version='v1.0-mini',
@@ -18,6 +22,11 @@ class NuscenesDataset(data.Dataset):
 
         # 获取该路径下的文件夹目录
         self.samples = list(self.ROOT.iterdir())
+        self.preprocess = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=NuscenesDataset.mean, std=NuscenesDataset.std),
+        ])
+
 
     def __len__(self):
         return len(self.samples)
@@ -26,18 +35,27 @@ class NuscenesDataset(data.Dataset):
 
         sample = self.samples[index]
 
-        image_full_file = sample / 'image_full.npy'
+        image_file = sample / 'image.npy'
+        radar_file = sample / 'radar.npy'
         labels_targets_file = sample / 'labels_targets.npy'
         regression_target_file = sample / 'regression_targets.npy'
 
-        with open(image_full_file, 'rb') as file:
-            image_full = torch.from_numpy(np.load(file))
+        # 图像数据
+        with open(image_file, 'rb') as file:
+            image = np.load(file).astype(np.uint8)
+
+        # 雷达数据
+        with open(radar_file, 'rb') as file:
+            radar = torch.from_numpy(np.load(file))
 
         with open(labels_targets_file, 'rb') as file:
             labels_targets = torch.from_numpy(np.load(file))
 
         with open(regression_target_file, 'rb') as file:
             regression_target = torch.from_numpy(np.load(file))
+
+        image = self.preprocess(image)
+        image_full = torch.cat((image,radar))
 
         return image_full, regression_target, labels_targets
 

@@ -4,6 +4,7 @@ from os import path
 from PIL import Image
 from nuscenes.utils.data_classes import RadarPointCloud
 from .radar import enrich_radar_data
+# from radar import enrich_radar_data
 
 
 def get_sensor_sample_data(nusc: NuScenes,
@@ -59,10 +60,6 @@ def get_sensor_sample_data(nusc: NuScenes,
                 img = img.resize(size=size)
 
         data = np.array(img, dtype=dtype)
-
-        # 将img像素映射到[0,1]
-        if np.issubdtype(dtype, np.floating):
-            data = data / 255
     else:
         raise Exception("\"%s\" is not supported" % sensor_channel)
 

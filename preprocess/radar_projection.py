@@ -4,6 +4,7 @@ from nuscenes.utils.data_classes import PointCloud
 from pyquaternion import Quaternion
 from nuscenes.utils.geometry_utils import view_points
 from . import radar
+# import radar
 
 # radar data(enriched)
 # [0]: x front距离
@@ -299,7 +300,7 @@ def create_imagep_visualization(image_plus_data, color_channel="distance",
                                                            image_channels].copy()  # copy so we dont change the old image
 
     # Draw the Horizon
-    image_data = np.array(image_data*255).astype(np.uint8)
+    image_data = np.array(image_data).astype(np.uint8)
     image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)
 
     ##### Paint every augmented pixel on the image #####

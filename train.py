@@ -103,8 +103,10 @@ def evaluate(val_loader, model, save_path=None, render=False):
         scores = scores.cpu().detach().numpy()
         labels = labels.cpu().detach().numpy()
 
-        image = images[i].cpu().detach().numpy()
-        image = (image[:3]*255).astype(np.uint8)
+        image = images[i][:3].cpu().detach().numpy()
+        for i in range(3):
+            image[i] = image[i]*NuscenesDataset.std[i] + NuscenesDataset.mean[i]
+        image = (image*255).astype(np.uint8)
         image = np.ascontiguousarray(image.transpose(1, 2, 0))
 
         # select indices which have a score above the threshold
