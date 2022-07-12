@@ -10,6 +10,7 @@ import time
 from utils.utils import save_checkpoint
 from datasets import visualize_targets
 import numpy as np
+from utils.utils import AverageMeter
 
 
 def get_data_loader(config):
@@ -43,11 +44,14 @@ def train(train_loader, model, loss_fn, optimizer, epoch, print_freq=10):
     """
     model.train()
 
+    batch_time = AverageMeter()  # forward prop. + back prop. time
+    data_time = AverageMeter()  # data loading time
+    losses = AverageMeter()  # loss
     start = time.time()
 
     for i, (images, bboxes, labels) in enumerate(train_loader):
         # 数据加载时间
-        data_time = (time.time() - start)
+        data_time.update(time.time() - start)
 
         # move to default device
         images = images.to(device)
@@ -67,18 +71,18 @@ def train(train_loader, model, loss_fn, optimizer, epoch, print_freq=10):
         # 更新参数
         optimizer.step()
 
-        batch_time = (time.time() - start)
+        losses.update(loss)
+        batch_time.update(time.time() - start)
         start = time.time()
 
         # 输出训练状态
         if i % print_freq == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
-                  'Batch Time {batch_time:.3f}\t'
-                  'Data Time {data_time:.3f}\t'
-                  'Loss {loss:.4f}\t'.format(epoch, i, len(train_loader),
-                                             batch_time=batch_time,
-                                             data_time=data_time,
-                                             loss=loss))
+                  'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'Data Time {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(epoch, i, len(train_loader),
+                                                                  batch_time=batch_time,
+                                                                  data_time=data_time, loss=losses))
     # 清除变量,节省内存
     del predicted_loc, predicted_cls, images, bboxes, labels
 

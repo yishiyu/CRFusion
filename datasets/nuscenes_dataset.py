@@ -50,21 +50,18 @@ class NuscenesDataset(data.Dataset):
         """
 
         def collecter(batch):
-            images = []
-            bboxes = []
-            labels = []
+            
+            images = torch.zeros((len(batch),*batch[0][0].shape))
+            bboxes = torch.zeros((len(batch),*batch[0][1].shape))
+            labels = torch.zeros((len(batch),*batch[0][2].shape))
 
-            for b in batch:
+            for i,(image, bbox, label) in enumerate(batch):
                 if np.random.rand() < image_dropout:
-                    images.append(torch.zeros(b[0].shape))
+                    pass
                 else:
-                    images.append(torch.tensor(b[0]))
-                bboxes.append(b[1])
-                labels.append(b[2])
-
-            images = torch.stack(images, dim=0)
-            bboxes = torch.stack(bboxes, dim=0)
-            labels = torch.stack(labels, dim=0)
+                    images[i] = image
+                bboxes[i] = bbox
+                labels[i] = label
 
             return images, bboxes, labels
 
