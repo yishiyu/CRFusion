@@ -104,8 +104,8 @@ def evaluate(val_loader, model, save_path=None, render=False):
         labels = labels.cpu().detach().numpy()
 
         image = images[i][:3].cpu().detach().numpy()
-        for i in range(3):
-            image[i] = image[i]*NuscenesDataset.std[i] + NuscenesDataset.mean[i]
+        for j in range(3):
+            image[j] = image[j]*NuscenesDataset.std[j] + NuscenesDataset.mean[j]
         image = (image*255).astype(np.uint8)
         image = np.ascontiguousarray(image.transpose(1, 2, 0))
 
