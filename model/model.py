@@ -182,7 +182,7 @@ class FPNSubmodel(nn.Module):
         # 非整数倍上采样
         self.block4_C4_reduced = nn.Conv2d(
             514, 254, kernel_size=1, stride=1, padding=0)
-        self.block4_P4_upsample = nn.Upsample(size=(45, 80), mode='bilinear')
+        self.block4_P4_upsample = nn.Upsample(size=(80, 45), mode='bilinear')
         self.block4_P4 = nn.Conv2d(254, 254, kernel_size=3, padding=1)
 
         self.block3_C3_reduced = nn.Conv2d(
@@ -455,6 +455,7 @@ class CRFNet(nn.Module):
 
     def forward(self, x):
         # 提取特征
+        x = x.permute(0,1,3,2)
         features, radar = self.backbone(x)
         fpn_output = self.fpn(features, radar)
 

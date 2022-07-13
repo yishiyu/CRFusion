@@ -12,6 +12,7 @@ def get_config(config_file='config/default.cfg'):
             self.data_dir = config['PATH']['data_dir']
             self.preprocessed_data_dir = config['PATH']['preprocessed_data_dir']
             self.checkpoints_dir = config['PATH']['checkpoints_dir']
+            self.log_dir = config['PATH']['log_dir']
 
             # 数据集参数
             self.nusc_version = config['DATASET']['nusc_version']

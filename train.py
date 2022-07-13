@@ -142,6 +142,11 @@ if __name__ == '__main__':
     else:
         config = get_config(args.config)
 
+    if not os.path.exists(config.checkpoints_dir):
+        os.mkdir(config.checkpoints_dir)
+    if not os.path.exists(config.log_dir):
+        os.mkdir(config.log_dir)
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # 训练数据,测试数据集,验证数据集
@@ -202,4 +207,6 @@ if __name__ == '__main__':
         save_checkpoint(checkpoint_dir, epoch, model, optimizer)
 
         # 使用验证集验证
-        evaluate(val_loader, model, save_path='./log/epoch{}'.format(epoch))
+        evaluate(val_loader, model,
+                 save_path=os.path.join(config.log_dir,
+                                        'epoch{}'.format(epoch)))
