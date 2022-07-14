@@ -1,5 +1,6 @@
 import tqdm
 import torch
+from multiprocessing import Pool
 from nuscenes.nuscenes import NuScenes
 from .utils import get_sensor_sample_data, compute_overlap
 import numpy as np
@@ -47,6 +48,9 @@ class Preprocesser:
             np.save(file, self.anchors)
 
     def preprocess(self):
+        # 多进程加速
+        pool = Pool(self.config.process_pool_size)
+
         for version in self.versions:
             nusc = NuScenes(version=version,
                             dataroot=self.ROOT_DIR,
@@ -68,85 +72,98 @@ class Preprocesser:
             print("==========preprocess dataset {}==========".format(version))
 
             sample_index = 0
+            # 进度条
+            pbar = tqdm.tqdm(total=len(nusc.sample))
+            update = lambda *args:pbar.update()
 
-            for sample in tqdm.tqdm(nusc.sample):
-
-                # 1. 获取图像数据
-                camera_token, camera_sample = self._load_image(nusc, sample)
-
-                # 2. 获取雷达数据
-                radar_token, radar_sample = self._load_radar(nusc, sample)
-
-                # 3. 数据融合
-                kwargs = {
-                    'pointsensor_token': radar_token,
-                    'camera_token': camera_token,
-                    'height': self.HEIGHT,
-                    'image_target_shape': self.IMAGE_TARGET_SHAPE,
-                    'clear_radar': False,
-                    'clear_image': False,
-                }
-                image_full = imageplus_creation(nusc,
-                                                image_data=camera_sample,
-                                                radar_data=radar_sample,
-                                                **kwargs)
-                # 只取需要的通道(R,G,B,rcs,distance)
-                image_full = np.array(image_full[:, :, self.CHANNELS])
-
-                # 4. 加载标注数据
-                annotations = self._load_annotations(nusc, sample, name2labels)
-                # 如果当前sample中没有符合要求的目标,则放弃此sample
-                if not annotations['bboxes'].shape[0]:
-                    continue
-
-                # 5. 计算标签
-                regression_targets, labels_targets = self._compute_targets(
-                    self.anchors, image_full, annotations, name2labels,
-                    negative_overlap=self.config.positive_overlap,
-                    positive_overlap=self.config.positive_overlap)
-
-                # image_full ==> (5, 360, 640)
-                image_full = image_full.transpose(2, 0, 1)
-
-                # 6. 保存数据
-                # 保存处理好的数据
-                sample_path = os.path.join(
-                    save_path, '{:0>5d}'.format(sample_index))
-                if not os.path.exists(sample_path):
-                    os.mkdir(sample_path)
-
-                # sample数据
-                meta = {
-                    'sample_token': sample['token'],
-                }
-                with open(os.path.join(sample_path, 'meta.json'), 'w') as file:
-                    json.dump(meta, file)
-
-                # 图像数据
-                with open(os.path.join(sample_path, 'image.npy'), 'wb') as file:
-                    np.save(file, image_full[:3].transpose(1,2,0).astype(np.uint8))
-
-                # 雷达数据
-                with open(os.path.join(sample_path, 'radar.npy'), 'wb') as file:
-                    np.save(file, image_full[3:])
-
-                with open(os.path.join(sample_path, 'regression_targets.npy'), 'wb') as file:
-                    np.save(file, regression_targets)
-
-                with open(os.path.join(sample_path, 'labels_targets.npy'), 'wb') as file:
-                    np.save(file, labels_targets)
-
-                # 可视化
-                # visualize_targets(image_full, self.anchors, regression_targets.numpy(), labels_targets.numpy(), display=True)
-                # regression_gt = (annotations['bboxes']).astype(int)
-                # image = (image_full[:3]).astype(np.uint8)
-                # image = np.ascontiguousarray(image.transpose(1, 2, 0))
-                # visualize_result(image, regression_gt, np.ones(regression_gt.shape[0], dtype=int), display=True)
-
+            for sample in nusc.sample:
+                # self._preprocess(nusc, sample, sample_index,
+                #                  name2labels, save_path)
+                # 多进程加速
+                pool.apply_async(self._preprocess,
+                                 (nusc, sample, sample_index,
+                                  name2labels, save_path),
+                                 callback=update)
                 sample_index += 1
                 pass
             pass
-        pass
+
+        # 销毁进程池
+        pool.close()
+        pool.join()
+
+    def _preprocess(self, nusc, sample, sample_index, name2labels, save_path):
+        # 1. 获取图像数据
+        camera_token, camera_sample = self._load_image(nusc, sample)
+
+        # 2. 获取雷达数据
+        radar_token, radar_sample = self._load_radar(nusc, sample)
+
+        # 3. 数据融合
+        kwargs = {
+            'pointsensor_token': radar_token,
+            'camera_token': camera_token,
+            'height': self.HEIGHT,
+            'image_target_shape': self.IMAGE_TARGET_SHAPE,
+            'clear_radar': False,
+            'clear_image': False,
+        }
+        image_full = imageplus_creation(nusc,
+                                        image_data=camera_sample,
+                                        radar_data=radar_sample,
+                                        **kwargs)
+        # 只取需要的通道(R,G,B,rcs,distance)
+        image_full = np.array(image_full[:, :, self.CHANNELS])
+
+        # 4. 加载标注数据
+        annotations = self._load_annotations(nusc, sample, name2labels)
+        # 如果当前sample中没有符合要求的目标,则放弃此sample
+        if not annotations['bboxes'].shape[0]:
+            return
+
+        # 5. 计算标签
+        regression_targets, labels_targets = self._compute_targets(
+            self.anchors, image_full, annotations, name2labels,
+            negative_overlap=self.config.positive_overlap,
+            positive_overlap=self.config.positive_overlap)
+
+        # image_full ==> (5, 360, 640)
+        image_full = image_full.transpose(2, 0, 1)
+
+        # 6. 保存数据
+        # 保存处理好的数据
+        sample_path = os.path.join(
+            save_path, '{:0>5d}'.format(sample_index))
+        if not os.path.exists(sample_path):
+            os.mkdir(sample_path)
+
+        # sample数据
+        meta = {
+            'sample_token': sample['token'],
+        }
+        with open(os.path.join(sample_path, 'meta.json'), 'w') as file:
+            json.dump(meta, file)
+
+        # 图像数据
+        with open(os.path.join(sample_path, 'image.npy'), 'wb') as file:
+            np.save(file, image_full[:3].transpose(1, 2, 0).astype(np.uint8))
+
+        # 雷达数据
+        with open(os.path.join(sample_path, 'radar.npy'), 'wb') as file:
+            np.save(file, image_full[3:])
+
+        with open(os.path.join(sample_path, 'regression_targets.npy'), 'wb') as file:
+            np.save(file, regression_targets)
+
+        with open(os.path.join(sample_path, 'labels_targets.npy'), 'wb') as file:
+            np.save(file, labels_targets)
+
+        # 可视化
+        # visualize_targets(image_full, self.anchors, regression_targets.numpy(), labels_targets.numpy(), display=True)
+        # regression_gt = (annotations['bboxes']).astype(int)
+        # image = (image_full[:3]).astype(np.uint8)
+        # image = np.ascontiguousarray(image.transpose(1, 2, 0))
+        # visualize_result(image, regression_gt, np.ones(regression_gt.shape[0], dtype=int), display=True)
 
     def _load_image(self, nusc,  sample):
         camera_token = sample['data'][self.CAMERA_CHANNEL]
